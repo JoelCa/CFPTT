@@ -7,13 +7,14 @@ Lemma predspec : forall n : nat, {m : nat | n = 0 /\ m = 0 \/ n = S m}.
 Proof.
   intros.
   case n.
-  exists 0.
-  left.
-  split; reflexivity.
-  intros.
-  exists n0.
-  right.
-  reflexivity.
+    exists 0.
+    left.
+    split; reflexivity.
+
+    intros.
+    exists n0.
+    right.
+    reflexivity.
 Qed.
 
 (* 1.2 *)
