@@ -117,7 +117,7 @@ Fixpoint sbeval (e : BoolExpr) : Value :=
 
 Functional Scheme beval_ind := Induction for beval Sort Prop. (* Está bien? *)
 Functional Scheme sbeval_ind := Induction for sbeval Sort Prop.
-
+Check beval_ind.
 
 (* 3.1 *)
 (* Se puede usar "functional induction"? *)
@@ -229,7 +229,71 @@ Inductive perm : list -> list ->Prop:=
 
 Hint Constructors perm.
 
+(* 2.1 *)
+Fixpoint reverse(l:list):list :=
+  match l with
+  | nil => nil
+  | cons x l' => append (reverse l') (cons x nil)
+  end.
+
+(* 2.2 *)
+Lemma Ej6_4: forall l: list, {l2: list | perm l l2}.
+Proof.
+  intros; exists (reverse l).
+  induction l.
+    auto.
+    simpl.
+    assert (perm (cons a l) (cons a (reverse l))).
+      apply perm_cons; assumption.
+    apply (perm_trans (cons a l) (cons a (reverse l)) (append (reverse l) (cons a nil))).
+      assumption.
+      constructor.
+Qed.
+
 End list_perm.
+
+(* Ejercicio 5 *)
+Section Ejercicio5.
+
+Inductive Le:nat -> nat -> Prop :=
+  | menorB : forall (n:nat), Le 0 n
+  | menorI : forall (n m:nat), Le n m -> Le (S n) (S m).
+
+Inductive Gt:nat -> nat -> Prop :=
+  | mayorB : forall (n:nat), Gt n 0
+  | mayorI : forall (n m: nat), Gt n m -> Gt (S n) (S m).
+
+Fixpoint leBool(n m:nat) {struct n}:bool:=
+  match n, m with
+  | 0, _ => true
+  | S x, 0 => false
+  | S x, S y => leBool x y
+  end.
+
+
+Functional Scheme leBool_ind := Induction for leBool Sort Prop.
+Check leBool_ind.
+
+
+(* NO puedo hacer "functional induction" directamente sobre {A}+{B}. *)
+Theorem Le_Gt_dec: forall n m:nat, {(Le n m)}+{(Gt n m)}.
+Proof.
+  intros.
+  case_eq (leBool n m); intros.
+  left.
+  functional induction (leBool n m).
+    constructor.
+    discriminate H.
+    constructor; exact (IHb H).
+
+    right.
+    functional induction (leBool n m).
+    discriminate H.
+    constructor.
+    constructor; exact (IHb H).
+Qed.
+
+End Ejercicio5.
 
 
 
