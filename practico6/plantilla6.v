@@ -27,11 +27,11 @@ Section Ejercicio2.
 
 Inductive bintree(A:Set):Set :=
     btree_nil
-  | node: bintree A -> A -> bintree A -> bintree A.
+  | nodeB: bintree A -> A -> bintree A -> bintree A.
 
 Inductive mirror(A:Set):bintree A -> bintree A -> Prop :=
     mirrorB : mirror A (btree_nil A) (btree_nil A) 
-  | mirrorI : forall (t1 t2 t1' t2':bintree A) (a b : A), a = b -> mirror A t1 t2' -> mirror A t2 t1' -> mirror A (node A t1 a t2) (node A t1' b t2').
+  | mirrorI : forall (t1 t2 t1' t2':bintree A) (a b : A), a = b -> mirror A t1 t2' -> mirror A t2 t1' -> mirror A (nodeB A t1 a t2) (nodeB A t1' b t2').
 
 (* 2.1 *)
 Lemma MirrorC: forall (A:Set) (t:bintree A), {t':bintree A|(mirror A t t')} .
@@ -41,7 +41,7 @@ Proof.
     constructor.
 
     elim IHt1; elim IHt2; intros; clear IHt1; clear IHt2.
-    exists (node A x a x0).
+    exists (nodeB A x a x0).
     constructor.
       reflexivity.
       assumption.
@@ -51,7 +51,7 @@ Qed.
 Fixpoint inverse (A:Set) (t:bintree A):bintree A :=
   match t with
   | btree_nil => btree_nil A
-  | node t1 a t2 => node A (inverse A t2) a (inverse A t1)
+  | nodeB t1 a t2 => nodeB A (inverse A t2) a (inverse A t1)
   end.
 
 Hint Constructors mirror.
@@ -382,10 +382,122 @@ Proof.
       omega.
 Qed.
 
-
-
-
 End Ejercicio6.
+
+(* Ejercicio 7 *)
+Section Ejercicio7.
+
+Inductive tree (A:Set) : Set :=
+  | leaf : tree A
+  | node : A -> tree A -> tree A -> tree A.
+
+Inductive tree_sub (A:Set) (t:tree A) : tree A -> Prop :=
+  | tree_sub1 : forall (t':tree A) (x:A), tree_sub A t (node A x t t')
+  | tree_sub2 : forall (t':tree A) (x:A), tree_sub A t (node A x t' t).
+
+(* Prueba extraida del libro *)
+Theorem lt_Acc : forall n:nat, Acc lt n.
+Proof.
+  induction n.
+    constructor.
+    intros p H. 
+    inversion H.
+    constructor.
+    intros y H0.
+    (*inversion IHn.*)
+    Print le_lt_or_eq.
+    case (le_lt_or_eq _ _ H0).
+      intro H1.
+      apply Acc_inv with n; auto with arith.
+      
+      intro e; injection e; intro e1; rewrite e1; assumption.
+Qed.
+
+
+Theorem well_founded_tree_sub : forall A:Set, well_founded (tree_sub A).
+Proof.
+  unfold well_founded.
+  induction a.
+    constructor.
+    intros y H.
+    inversion H.
+
+    constructor.
+    intros y H.
+    inversion_clear H; assumption.
+Qed.
+
+End Ejercicio7.
+
+(* Ejercicio 8 *)
+Section Ejercicio8.
+
+(* Esta bien que cuente los constructores? *)
+(* 8.1 *)
+Fixpoint size (e:BoolExpr):nat :=
+  match e with
+  | bbool b => 1
+  | or e1 e2 => S(size e1 + size e2)
+  | bnot e1 => S(size e1)
+  end. 
+
+(* Puedo agregarlo? *)
+Functional Scheme size_ind := Induction for size Sort Prop.
+
+
+Definition elt (e1 e2 : BoolExpr) := size e1 < size e2.
+
+(* 8.2 *)
+Require Import Coq.Arith.Wf_nat.
+Require Import Coq.Wellfounded.Inverse_Image.
+
+Lemma lemaElt : forall (e:BoolExpr), size e > 0.
+Proof.
+  intro e.
+  functional induction (size e); auto with arith.
+Qed.
+
+
+(* Puedo usa "omega? "*)
+Theorem elt_acc : well_founded elt.
+Proof.
+  unfold well_founded.
+  intros.
+  induction a.
+    constructor.
+    intros y H.
+    unfold elt in H.
+    simpl in H.
+    assert (size y > 0); [apply lemaElt|idtac].
+    case (le_lt_or_eq _ _ H).
+    intro.
+    apply lt_S_n in H1.
+    omega.
+    intro H1.
+    omega.
+    constructor.
+    intros y H.
+
+    unfold elt in H.
+    inversion H. (* Qué hago? *)
+Qed.
+
+
+Inductive BoolExpr : Set :=
+  | bbool : bool -> BoolExpr
+  | or : BoolExpr -> BoolExpr -> BoolExpr
+  | bnot : BoolExpr -> BoolExpr.
+
+Inductive BEval : BoolExpr -> Value -> Prop :=
+  | ebool : forall b : bool, BEval (bbool b) (b:Value)
+  | eorl : forall e1 e2 : BoolExpr, BEval e1 true -> BEval (or e1 e2) true
+  | eorr : forall e1 e2 : BoolExpr, BEval e2 true -> BEval (or e1 e2) true
+  | eorrl : forall e1 e2 : BoolExpr, BEval e1 false -> BEval e2 false -> BEval (or e1 e2) false
+
+
+
+
+End Ejercicio8.
 
 
 
