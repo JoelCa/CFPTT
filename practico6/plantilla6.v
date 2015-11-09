@@ -72,8 +72,8 @@ End Ejercicio2.
 (* 2.3 *)
 (* Extraigo el 2.1 o 2.2 ? *)
 Extraction Language Haskell.
-Extraction "/home/joel/facultad/Construcción Formal de Programas en Teoría de Tipos/practico6/mirror_function" MirrorInv.
-
+(*Extraction "/home/joel/facultad/Construcción Formal de Programas en Teoría de Tipos/practico6/mirror_function" MirrorInv.
+*)
 
 (* Ejercicio 3 *)
 Section Ejercicio3.
@@ -195,7 +195,7 @@ End Ejercicio3.
 (* 3.3 *)
 (* El código de beval y sbeval NO varía, está bien? *)
 Extraction Language Haskell.
-Extraction "/home/joel/facultad/Construcción Formal de Programas en Teoría de Tipos/practico6/beval_function" BevalInvAuto.
+(*Extraction "/home/joel/facultad/Construcción Formal de Programas en Teoría de Tipos/practico6/beval_function" BevalInvAuto.
 
 Extraction "/home/joel/facultad/Construcción Formal de Programas en Teoría de Tipos/practico6/sbeval_function" SbevalInvAuto.
 
@@ -204,7 +204,7 @@ Extract Inductive bool => "bool" [ "true" "false" ].
 Extraction "/home/joel/facultad/Construcción Formal de Programas en Teoría de Tipos/practico6/beval2_function" BevalInvAuto.
 
 Extraction "/home/joel/facultad/Construcción Formal de Programas en Teoría de Tipos/practico6/sbeval2_function" SbevalInvAuto.
-
+*)
 (* Ejercicio 4 *)
 
 Section list_perm.
@@ -297,6 +297,8 @@ Qed.
 Require Import Omega.
 Open Scope Z_scope.
 
+(* Omega resuelve algunas ecuaciones aritméticas decidibles *)
+
 Theorem le_gt_dec: forall n m:nat, {(le n m)}+{(gt n m)}.
 Proof.
   intros.
@@ -346,6 +348,7 @@ Proof.
 
     elim IHa.
     intros.
+    unfold  spec_res_nat_div_mod in p.
     rewrite (surjective_pairing x) in p. (* De ésta forma me deshago del LET *)
     simpl in p.
     elim p; intros; clear p.
@@ -395,7 +398,7 @@ Inductive tree_sub (A:Set) (t:tree A) : tree A -> Prop :=
   | tree_sub1 : forall (t':tree A) (x:A), tree_sub A t (node A x t t')
   | tree_sub2 : forall (t':tree A) (x:A), tree_sub A t (node A x t' t).
 
-(* Prueba extraida del libro *)
+(* Extra: Prueba extraida del libro *)
 Theorem lt_Acc : forall n:nat, Acc lt n.
 Proof.
   induction n.
@@ -432,7 +435,7 @@ End Ejercicio7.
 (* Ejercicio 8 *)
 Section Ejercicio8.
 
-(* Esta bien que cuente los constructores? *)
+(* Esta bien que cuente los constructores? Sí *)
 (* 8.1 *)
 Fixpoint size (e:BoolExpr):nat :=
   match e with
@@ -441,24 +444,12 @@ Fixpoint size (e:BoolExpr):nat :=
   | bnot e1 => S(size e1)
   end. 
 
-(* Puedo agregarlo? *)
-Functional Scheme size_ind := Induction for size Sort Prop.
-
-
 Definition elt (e1 e2 : BoolExpr) := size e1 < size e2.
 
 (* 8.2 *)
 Require Import Coq.Arith.Wf_nat.
 Require Import Coq.Wellfounded.Inverse_Image.
 
-Lemma lemaElt : forall (e:BoolExpr), size e > 0.
-Proof.
-  intro e.
-  functional induction (size e); auto with arith.
-Qed.
-
-
-(* Puedo usa "omega? "*)
 Theorem elt_acc : well_founded elt.
 Proof.
   unfold well_founded.
@@ -466,46 +457,78 @@ Proof.
   unfold elt.
   apply (wf_inverse_image).
   unfold well_founded.
-  apply lt_Acc.
-
-  (*
-  intros.
-  induction a.
-    constructor.
-    intros y H.
-    unfold elt in H.
-    simpl in H.
-    assert (size y > 0); [apply lemaElt|idtac].
-    case (le_lt_or_eq _ _ H).
-    intro.
-    apply lt_S_n in H1.
-    omega.
-    intro H1.
-    omega.
-    constructor.
-    intros y H.
-
-    unfold elt in H.
-    inversion H. (* Qué hago? *)
-  *) 
+  apply lt_wf.
 Qed.
 
-(*
-Inductive BoolExpr : Set :=
-  | bbool : bool -> BoolExpr
-  | or : BoolExpr -> BoolExpr -> BoolExpr
-  | bnot : BoolExpr -> BoolExpr.
+End Ejercicio8.
 
-Inductive BEval : BoolExpr -> Value -> Prop :=
-  | ebool : forall b : bool, BEval (bbool b) (b:Value)
-  | eorl : forall e1 e2 : BoolExpr, BEval e1 true -> BEval (or e1 e2) true
-  | eorr : forall e1 e2 : BoolExpr, BEval e2 true -> BEval (or e1 e2) true
-  | eorrl : forall e1 e2 : BoolExpr, BEval e1 false -> BEval e2 false -> BEval (or e1 e2) false
+(* Ejercicio 9 *)
+Section Ejercicio9.
+
+(* En "a divmod b", b != 0 *)
+Theorem minus_decrease :forall x y:nat, Acc lt x -> y <> 0 -> Acc lt (x-y).
+Proof.
+  intros x y H H1.
+  constructor.
+  intros y' H2.
+  assert (x-y < x).
+  omega.
+  assert (y' < x).
+  omega.
+  apply Acc_inv with x;assumption.
+Qed.
+
+Parameter lema_divmod : forall x y:nat, x >= y -> y <> 0 -> x <> 0.
+
+Parameter lema_divmod' : forall x y, y<>0 -> x - y < x.
+
+Require Import Coq.Arith.Bool_nat.
+
+Check minus_decrease.
+
+(* el x-y es estructural menor a x *)
+(*
+Fixpoint divmod_aux (a b: nat) (H:Acc lt a) (H1: b<>0) {struct H}:nat*nat :=
+  match lt_ge_dec a b with
+  | left _ => (0,a)
+  | right x =>
+    let (q,r) := divmod_aux (a-b) b (minus_decrease a b _ H1) H1 in (S q, r)
+  end.
 *)
 
+Check Acc_inv. 
+Fixpoint divmod_aux (a b: nat) (H:Acc lt a) (H1: b<>0) {struct H}:nat*nat :=
+  if leb (S a) b
+    then (0,a)
+    else let (q,r) := divmod_aux (a-b) b (Acc_inv H (a-b) (lema_divmod' a b H1)) H1 in (S q, r).
 
 
-End Ejercicio8.
+End Ejercicio9.
+
+
+(* Ejercicio 10 *)
+Section Ejercicio10.
+
+Definition listN := list nat.
+
+Fixpoint insert' (n:nat) (l:listN):listN :=
+  match l with
+  | nil => nil nat
+  | cons a l' => if leBool a n then insert' n l' else cons nat n (cons nat a l')
+  end.
+
+Fixpoint insert_sort (l:listN):listN :=
+  match l with
+  | nil => nil nat
+  | cons a l' => insert' a (insert_sort l')
+  end.
+
+
+
+
+End Ejercicio10.
+
+
 
 
 
