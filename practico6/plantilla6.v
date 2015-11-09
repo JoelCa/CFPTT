@@ -275,6 +275,7 @@ Functional Scheme leBool_ind := Induction for leBool Sort Prop.
 Check leBool_ind.
 
 
+(* 5.2 *)
 (* NO puedo hacer "functional induction" directamente sobre {A}+{B}. *)
 Theorem Le_Gt_dec: forall n m:nat, {(Le n m)}+{(Gt n m)}.
 Proof.
@@ -293,7 +294,98 @@ Proof.
     constructor; exact (IHb H).
 Qed.
 
+Require Import Omega.
+Open Scope Z_scope.
+
+Theorem le_gt_dec: forall n m:nat, {(le n m)}+{(gt n m)}.
+Proof.
+  intros.
+  case_eq (leBool n m); intros.  
+    left.
+    functional induction (leBool n m).
+      omega.
+      discriminate H.
+      assert (le x y).
+      exact (IHb H).
+      omega.
+
+    right.
+    functional induction (leBool n m).
+      discriminate.
+      omega.
+      assert (gt x y).
+      exact (IHb H).
+      omega.
+Qed.
+
 End Ejercicio5.
+
+(* Ejercicio 6 *)
+Section Ejercicio6.
+
+Require Import Omega.
+Require Import DecBool. 
+Require Import Compare_dec.
+Require Import Plus.
+Require Import Mult.
+
+Definition spec_res_nat_div_mod (a b:nat) (qr:nat*nat) :=
+  match qr with
+    (q,r) => (a = b*q + r) /\ r < b
+  end.
+
+(* Por qué cuando se define nat_div_mod, espera una prueba?*)
+Definition nat_div_mod :
+  forall a b:nat, not(b=0) -> {qr:nat*nat | spec_res_nat_div_mod a b qr}.
+Proof.
+  intros.
+  induction a.
+    exists (pair 0 0).
+    simpl.
+    omega.
+
+    elim IHa.
+    intros.
+    rewrite (surjective_pairing x) in p. (* De ésta forma me deshago del LET *)
+    simpl in p.
+    elim p; intros; clear p.
+    elim (le_lt_dec (S (S (snd x))) b); intro.
+      exists (((fst x), S (snd x))).
+      simpl.
+      split.
+        rewrite <- (plus_Snm_nSm (b * fst x) (snd x)).
+        simpl.
+        apply f_equal.
+        assumption.
+        unfold lt in H1.
+        elim ((le_lt_or_eq (S(snd x)) b) H1); intro.
+        auto.
+        rewrite H2 in a0.
+        elim ((le_Sn_n b) a0).
+
+      exists (S(fst x), 0).
+      simpl.
+      unfold lt in *.
+      assert (le (S(S (snd x))) (S b)).
+      exact ((le_n_S (S(snd x)) b) H1).
+      assert ((S (S (snd x))) = S b).
+      exact (le_antisym  (S (S (snd x))) (S b) H2 b0).
+      injection H3; intro.
+      rewrite <- H4.
+      split.
+      simpl.
+      apply f_equal.
+      rewrite <- H4 in H0.
+      simpl in H0.
+      rewrite (mult_succ_r (snd x) (fst x)).
+      omega.
+      omega.
+Qed.
+
+
+
+
+End Ejercicio6.
 
 
 
