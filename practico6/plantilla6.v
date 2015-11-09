@@ -59,7 +59,7 @@ Functional Scheme inverse_ind := Induction for inverse Sort Prop. (* Está bien?
 Check inverse_ind.
 
 (* 2.2 *)
-(* Al probarlo, puedo concluir que inverse construye el arbol espejo de su entrada? *)
+(* Al probarlo, puedo concluir que inverse construye el arbol espejo de su entrada? Sí *)
 Lemma MirrorInv: forall (A:Set) (t:bintree A), {t':bintree A | mirror A t t'} .
 Proof.
   intros.
