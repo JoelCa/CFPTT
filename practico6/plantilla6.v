@@ -462,6 +462,13 @@ Qed.
 Theorem elt_acc : well_founded elt.
 Proof.
   unfold well_founded.
+  Print wf_inverse_image.
+  unfold elt.
+  apply (wf_inverse_image).
+  unfold well_founded.
+  apply lt_Acc.
+
+  (*
   intros.
   induction a.
     constructor.
@@ -480,9 +487,10 @@ Proof.
 
     unfold elt in H.
     inversion H. (* Qué hago? *)
+  *) 
 Qed.
 
-
+(*
 Inductive BoolExpr : Set :=
   | bbool : bool -> BoolExpr
   | or : BoolExpr -> BoolExpr -> BoolExpr
@@ -493,7 +501,7 @@ Inductive BEval : BoolExpr -> Value -> Prop :=
   | eorl : forall e1 e2 : BoolExpr, BEval e1 true -> BEval (or e1 e2) true
   | eorr : forall e1 e2 : BoolExpr, BEval e2 true -> BEval (or e1 e2) true
   | eorrl : forall e1 e2 : BoolExpr, BEval e1 false -> BEval e2 false -> BEval (or e1 e2) false
-
+*)
 
 
 
