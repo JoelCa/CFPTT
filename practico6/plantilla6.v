@@ -496,7 +496,8 @@ Fixpoint divmod_aux (a b: nat) (H:Acc lt a) (H1: b<>0) {struct H}:nat*nat :=
   end.
 *)
 
-Check Acc_inv. 
+Print Acc_inv.
+
 Fixpoint divmod_aux (a b: nat) (H:Acc lt a) (H1: b<>0) {struct H}:nat*nat :=
   if leb (S a) b
     then (0,a)
@@ -513,8 +514,8 @@ Definition listN := list nat.
 
 Fixpoint insert' (n:nat) (l:listN):listN :=
   match l with
-  | nil => nil nat
-  | cons a l' => if leBool a n then insert' n l' else cons nat n (cons nat a l')
+  | nil => cons nat n (nil nat)
+  | cons a l' => if leb a n then cons nat a (insert' n l') else cons nat n (cons nat a l')
   end.
 
 Fixpoint insert_sort (l:listN):listN :=
@@ -523,30 +524,220 @@ Fixpoint insert_sort (l:listN):listN :=
   | cons a l' => insert' a (insert_sort l')
   end.
 
+Functional Scheme insert_sort_ind := Induction for insert_sort Sort Prop.
+Functional Scheme insert'_ind := Induction for insert' Sort Prop.
 
 
+Inductive sorted (A:Set):(A->A->Prop) -> list A -> Prop :=
+  | sortedBNil : forall R:A->A->Prop, sorted A R (nil A)
+  | sortedBUnit : forall (R:A->A->Prop) (a:A) (l:list A), sorted A R (cons A a (nil A))
+  | sortedI : forall (R:A->A->Prop) (a b : A) (l:list A),
+      sorted A R (cons A b l) -> R a b -> sorted A R (cons A a (cons A b l)).
+
+Lemma tailSort : forall (l:listN) (a:nat), sorted nat le (cons nat a l) -> sorted nat le l.
+Proof.
+  destruct l.
+    intros.
+    constructor.
+
+    intros.
+    inversion_clear H.
+    assumption.
+Qed.
+
+(*  PROBAR *)
+Parameter appendAsoc : forall (A : Set) (l m n : list A), append A l (append A m n) = append A (append A l m) n.
+
+Lemma permInversion : forall (A : Set) (l : list A) (a0 a1 : A),
+  perm A (cons A a0 (cons A a1 l)) (append A l (cons A a0 (cons A a1 (nil A)))).
+Proof.
+    intros.
+    assert (perm A (cons A a0 (cons A a1 l)) (append A (cons A a1 l) (cons A a0 (nil A)))).
+    constructor.
+    assert (perm A (append A (cons A a1 l) (cons A a0 (nil A)))
+      (cons A a1 (append A l (cons A a0 (nil A))))).
+    simpl; constructor.
+    assert (perm A (cons A a1 (append A l (cons A a0 (nil A))))
+      (append A (append A l (cons A a0 (nil A))) (cons A a1 (nil A)))).
+    constructor.
+    assert (perm A (append A (append A l (cons A a0 (nil A))) (cons A a1 (nil A)))
+      (append A l (cons A a0 (cons A a1 (nil A))))).
+    rewrite <- (appendAsoc A l (cons A a0 (nil A)) (cons A a1 (nil A))).
+    simpl; constructor.
+    apply perm_trans with (append A (append A l (cons A a0 (nil A))) (cons A a1 (nil A))).
+    apply perm_trans with (cons A a1 (append A l (cons A a0 (nil A)))).
+    apply perm_trans with (append A (cons A a1 l) (cons A a0 (nil A))).
+    assumption.
+    assumption.
+    assumption.
+    assumption.
+Qed.
+
+(* NO ME SALE *)
+Parameter permInversion2: forall (A : Set) (l : list A) (a : A),
+  perm A (append A l (cons A a (nil A))) (cons A a l).
+(*
+Proof.
+  intros.
+  induction l.
+    simpl.
+    constructor.
+    simpl.
+
+Qed.
+*)
+
+(* PROBAR *)
+Lemma permSimetria : forall (A : Set) (l l': list A), perm A l l' -> perm A l' l.
+Proof.
+  intros.
+    induction H.
+      constructor.
+      constructor; assumption.
+      simpl.
+      induction l.
+        simpl.
+        constructor.
+        simpl.
+        assert (perm A (append A (cons A a0 l) (cons A a (nil A))) (cons A a (cons A a0 l))).
+        apply permInversion2.
+        assert (perm A (cons A a0 (append A l (cons A a (nil A)))) (append A (cons A a0 l) (cons A a (nil A)))).
+        simpl.
+        constructor.
+        apply perm_trans with (append A (cons A a0 l) (cons A a (nil A))).
+        assumption.
+        assumption.
+        apply perm_trans with l2; assumption.
+Qed.
+
+Lemma permLema : forall (A:Set) (l:list A) (a0 a1:A),
+  perm A (cons A a0 (cons A a1 l)) (cons A a1 (cons A a0 l)) <->
+    (perm A (append A l (cons A a0 (cons A a1 (nil A))))
+      (append A l (cons A a1 (cons A a0 (nil A))))).
+Proof.
+  intros; unfold iff.
+  split; intro H.
+    assert (perm A (append A l (cons A a0 (cons A a1 (nil A)))) (cons A a0 (cons A a1 l))).
+    apply permSimetria.
+    apply permInversion.
+    assert (perm A (cons A a1 (cons A a0 l)) (append A l (cons A a1 (cons A a0 (nil A))))).
+    apply permInversion.
+    apply perm_trans with (cons A a1 (cons A a0 l)).
+    apply perm_trans with (cons A a0 (cons A a1 l)).
+    assumption.
+    assumption.
+    assumption.
+
+    assert (perm A (cons A a0 (cons A a1 l)) (append A l (cons A a0 (cons A a1 (nil A))))).
+    apply permInversion.
+    assert (perm A (append A l (cons A a1 (cons A a0 (nil A)))) (cons A a1 (cons A a0 l))).
+    apply permSimetria; apply permInversion.
+    apply perm_trans with (append A l (cons A a1 (cons A a0 (nil A)))).
+    apply perm_trans with (append A l (cons A a0 (cons A a1 (nil A)))).
+    assumption.
+    assumption.
+    assumption.
+Qed.
+
+
+Lemma permSwap : forall (l:listN) (a a0:nat), perm nat (cons nat a (cons nat a0 l)) (cons nat a0 (cons nat a l)).
+Proof.
+  induction l; intros.
+     apply perm_app.
+
+      assert (perm nat (cons nat a0 (cons nat a1 l)) (cons nat a1 (cons nat a0 l))).
+      apply IHl.
+      assert (perm nat (append nat l (cons nat a0 (cons nat a1 (nil nat))))
+        (append nat l (cons nat a1 (cons nat a0 (nil nat))))).
+      apply permLema; assumption.
+      assert (perm nat (cons nat a (append nat l (cons nat a0 (cons nat a1 (nil nat)))))
+        (cons nat a (append nat l (cons nat a1 (cons nat a0 (nil nat)))))).
+      constructor; assumption.
+      apply (permLema nat (cons nat a l) a0 a1).
+      simpl; assumption.
+Qed.
+
+Lemma permInsert : forall (l:listN) (a:nat), perm nat (cons nat a l) (insert' a l).
+Proof.
+  destruct l; intro a.
+    simpl.
+    constructor.
+
+    functional induction (insert' a (cons nat n l)).
+      constructor.
+
+      assert (perm nat (cons nat a0 (cons nat a l')) (cons nat a0 (insert' a l'))).
+      constructor; assumption.
+      assert (perm nat (cons nat a (cons nat a0 l')) (cons nat a0 (cons nat a l'))).
+      apply permSwap.
+      apply perm_trans with (cons nat a0 (cons nat a l')); assumption.
+
+      constructor.
+Qed.
+
+
+(*Inductive perm : list A -> list A ->Prop:=
+  |perm_refl: forall l, perm l l
+  |perm_cons: forall a l0 l1, perm l0 l1-> perm (cons a l0)(cons a l1)
+  |p_ccons: forall a b l, (perm (cons a (cons b l)) (cons b (cons a l)))
+  |perm_trans: forall l1 l2 l3, perm l1 l2 -> perm l2 l3 -> perm l1 l3.
+*)
+
+Theorem SORT: forall l:(list nat), {s:(list nat) | (sorted nat le s) /\ (perm nat l s)}.
+Proof.
+  intro l; exists (insert_sort l).
+  split.
+    induction l.
+      simpl.
+      constructor.
+
+      simpl.
+      functional induction (insert' a (insert_sort l)).
+        constructor. (* ME DEJA: list nat*)
+        auto.
+        
+        assert (sorted nat le (insert' a l')); [exact (IHl1 (tailSort l' a0 IHl))|idtac].
+        clear IHl1.
+        functional induction (insert' a l').
+          constructor.
+            constructor; auto.
+            apply leb_complete; assumption.
+
+          inversion_clear IHl.
+          constructor; assumption.
+
+          constructor.
+            assumption.
+            apply leb_complete; assumption.
+
+        constructor.
+          assumption.
+          assert (a < a0); [exact (leb_complete_conv a a0 e0)|idtac]. 
+          omega.
+
+    induction l.
+      simpl; constructor.
+      simpl. 
+
+      functional induction (insert' a (insert_sort l)).
+        apply perm_cons; assumption.
+
+        clear IHl1.
+        assert (perm nat (cons nat a0 (cons nat a l')) (cons nat a0 (insert' a l'))).
+        constructor.
+        apply permInsert.
+        assert (perm nat (cons nat a (cons nat a0 l')) (cons nat a0 (cons nat a l'))).
+        apply permSwap.
+        assert (perm nat (cons nat a l) (cons nat a (cons nat a0 l'))).
+        constructor; assumption.
+        apply perm_trans with (cons nat a0 (cons nat a l')).
+          apply perm_trans with (cons nat a (cons nat a0 l')).
+            assumption.
+            assumption.
+          assumption.
+
+        constructor.
+        assumption.
+Qed.        
 
 End Ejercicio10.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
