@@ -254,6 +254,8 @@ Fixpoint delete (l:listN) (n:nat):listN :=
   end.
 
 (* 6.3 *)
+Require Import Coq.Arith.Compare_dec.
+
 Function insert' (n:nat) (l:listN):listN :=
   match l with
   | nil => cons nat n (nil nat)

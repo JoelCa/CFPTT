@@ -206,7 +206,7 @@ Unset Extraction Optimize.
 Extraction "beval" LazyBEval EagerBEval ej3_2_lazy ej3_2_eager.
 
 (* Borrar la línea "import qualified Prelude" *)
-Extract Inductive bool => "Bool" [ "True" "False" ].
+Extract Inductive bool => "Prelude.Bool" [ "True" "False" ].
 Extraction "beval_bool" LazyBEval EagerBEval ej3_2_lazy ej3_2_eager.
 
 (* Ejercicio 4 *)
@@ -485,6 +485,21 @@ Fixpoint divmod_aux (a b: nat) (H:Acc lt a) (H1: b<>0) {struct H}:nat*nat :=
   end.
 
 Definition divmod (a b:nat) (H:b<>0):nat*nat := divmod_aux a b (lt_wf a) H.
+
+(* Otra forma - NO sale *)
+(*
+Require Import Coq.Program.Wf.
+Require Import Coq.Program.Tactics.
+
+Program Fixpoint divmod2 (a b: nat) (H: b<>0) {wf lt a}:nat*nat :=
+  if leb b a
+    then let (q,r) := divmod2 (a-b) b H in (S q, r)
+    else (0,a).
+
+Next Obligation.
+  destruct a.
+Qed.
+*)
 
 (*
 Lemma ll:3<>0.
