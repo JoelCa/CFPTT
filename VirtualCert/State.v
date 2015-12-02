@@ -46,4 +46,57 @@ Record context : Set :=
        ctxt_oss : os_ident -> bool
     }.
 
+(* Ejercicio 1 *)
+Inductive exec_mode : Set :=
+  | usr : exec_mode
+  | svn : exec_mode.
+
+Record os : Set :=
+  Os
+    {
+      curr_page : padd;
+      hcall : Hyperv_call
+    }.
+
+Definition oss_map := mapping os_ident os.
+
+Inductive os_activity : Set :=
+  | running : os_activity
+  | waiting : os_activity.
+
+(* Está bien hacer doble mapping? *)
+Definition hypervisor_map := mapping os_ident (mapping padd madd).
+
+Check (option value).
+
+Inductive content : Set :=
+  | RW : option value -> content
+  | PT : mapping vadd madd -> content
+  | Other : content.
+
+Inductive page_owner : Set :=
+  | Hyp : page_owner
+  | OS : os_ident -> page_owner
+  | No_Owner : page_owner.
+
+Record page : Set :=
+  Page
+    {
+      page_content : content;
+      page_owned_by : page_owner
+    }.
+
+Definition system_memory := mapping madd page.
+
+Record state : Set :=
+  State
+    {
+      active_os : os_ident;
+      aos_exec_mode : exec_mode;
+      aos_activity : os_activity;
+      oss : oss_map;
+      hypervisor : hypervisor_map;
+      memory : system_memory
+    }.
+
 End State.
