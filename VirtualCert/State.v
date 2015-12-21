@@ -58,20 +58,20 @@ Record os : Set :=
       hcall : Hyperv_call
     }.
 
-Definition oss_map := mapping os_ident os.
+
+Definition oss_map := os_ident -> option os.
 
 Inductive os_activity : Set :=
   | running : os_activity
   | waiting : os_activity.
 
-(* Está bien hacer doble mapping? *)
-Definition hypervisor_map := mapping os_ident (mapping padd madd).
+Definition hypervisor_map := os_ident -> option (padd -> option madd).
 
 Check (option value).
 
 Inductive content : Set :=
   | RW : option value -> content
-  | PT : mapping vadd madd -> content
+  | PT : (vadd -> option madd) -> content
   | Other : content.
 
 Inductive page_owner : Set :=
@@ -86,7 +86,7 @@ Record page : Set :=
       page_owned_by : page_owner
     }.
 
-Definition system_memory := mapping madd page.
+Definition system_memory := madd -> option page.
 
 Record state : Set :=
   State

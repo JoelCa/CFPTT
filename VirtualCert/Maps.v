@@ -114,4 +114,23 @@ Fixpoint map_valid_index_fix (mp:mapping) (idx:index) : bool :=
 (* Tamaño de un Map *)
 Definition map_size (mp : mapping) : nat := length mp.
 
+
+
+(* LO NUEVO *)
+
+Definition option_elim (A B:Type) (o:option A) (f:A->B) (b:B):B:=
+  match o with
+  | Some a => f a
+  | None => b
+  end.
+
+Definition option_app (A B:Type) (f:A->option B) (q:option A) :option B:=
+  option_elim q f None.
+
+Definition option_appD (A B:Type) (o:option (A->option B)) (q:option A) :option B:=
+  option_app (fun (g:A->option B) => option_app g q) o.
+
+Definition option_update (A B:Type) (f:A->option B) (compare:forall x1 x2 : A, {x1 = x2} + {x1 <> x2}) (x:A) (y:B):A->option B:=
+  fun (a:A) => if compare a x then Some y else f a.
+
 End Mapping_Definition.
