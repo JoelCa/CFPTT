@@ -138,5 +138,4 @@ Definition option_update (A B:Type) (f:A->option B) (compare:forall x1 x2 : A, {
 Definition app (A B:Type) (f:A->option B) (x:A) (g:B->Prop):Prop:=
   option_elim (f x) g False.
 
-
 End Mapping_Definition.
