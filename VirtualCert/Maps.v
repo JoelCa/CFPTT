@@ -29,7 +29,7 @@ Notation "'If' c1 'then' c2 'else' c3" :=
   match c1 with
   | left _ => c2
   | right _ => c3
-  end (at level 200).
+  end (at level 200).  
 
 Section Mapping_Definition.
 
@@ -132,5 +132,11 @@ Definition option_appD (A B:Type) (o:option (A->option B)) (q:option A) :option 
 
 Definition option_update (A B:Type) (f:A->option B) (compare:forall x1 x2 : A, {x1 = x2} + {x1 <> x2}) (x:A) (y:B):A->option B:=
   fun (a:A) => if compare a x then Some y else f a.
+
+(*Utilizamos app se quiere evaluar el predicado g(f(x)), sabiendo
+* que f(x) está bien definido *)
+Definition app (A B:Type) (f:A->option B) (x:A) (g:B->Prop):Prop:=
+  option_elim (f x) g False.
+
 
 End Mapping_Definition.

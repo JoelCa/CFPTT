@@ -42,7 +42,14 @@ Definition isRW (s:state) (ma:madd):Prop :=
                     /\ option_elim ov (fun (_:value)=> True) False
     ) False.
 
+Check app.
+
+(* NO lo puedo poner en Actions.v*)
+Notation "'App' c1 '[' c2 ']' c3" :=                                                                                 
+      (app c1 c2 c3)(at level 200).
+
 (* TERMINAR *)
+(* Como es la precedencia del exits? *)
 Definition Pre (s:state) (a:Action):Prop :=
   match a with
   | Read v => Is_true (context.(ctxt_vadd_accessible) v)
@@ -53,8 +60,12 @@ Definition Pre (s:state) (a:Action):Prop :=
                   /\ exists ma:madd, va_mapped_to_ma s v ma
                     /\ isRW s ma
 
-  | _ => False
+  | Chmod =>  s.(aos_activity) = waiting
+              /\  App s.(oss) [s.(active_os)] (fun (s:os)=>s.(hcall)=None)
   end.
+
+Check Is_true.
+
 
 (*TERMINAR*)
 Definition Post (s:state) (a:Action) (s':state):Prop  :=
@@ -62,6 +73,36 @@ Definition Post (s:state) (a:Action) (s':state):Prop  :=
   | Read x => s=s'
   | Write v x => exists ma:madd,  va_mapped_to_ma s v ma
                                   /\ s'.(memory) = option_update s.(memory) madd_eq ma (Page (RW (Some x)) (OS s.(active_os)))
-  | _ => False 
+                                  /\ s'.(active_os) = s.(active_os)
+                                  /\ s'.(aos_exec_mode) = s.(aos_exec_mode)
+                                  /\ s'.(aos_activity) = s.(aos_activity)
+                                  /\ s'.(oss) = s.(oss)
+                                  /\ s'.(hypervisor)=s.(hypervisor)
+  | Chmod =>  (Is_true (context.(ctxt_oss) s.(active_os))
+                /\ s'.(aos_exec_mode) = svc
+                /\ s'.(aos_activity) = running
+                /\ s'.(memory) = s.(memory)
+                /\ s'.(active_os) = s.(active_os)
+                /\ s'.(oss) = s.(oss)
+                /\ s'.(hypervisor) = s.(hypervisor))
+              \/  (~Is_true (context.(ctxt_oss) s.(active_os))
+                /\ s'.(aos_exec_mode) = usr
+                /\ s'.(aos_activity) = running
+                /\ s'.(memory) = s.(memory)
+                /\ s'.(active_os) = s.(active_os)
+                /\ s'.(oss) = s.(oss)
+                /\ s'.(hypervisor) = s.(hypervisor))
   end. 
+
+
+
+
+
+
+
+
+
+
+
+
 

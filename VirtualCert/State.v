@@ -49,13 +49,13 @@ Record context : Set :=
 (* Ejercicio 1 *)
 Inductive exec_mode : Set :=
   | usr : exec_mode
-  | svn : exec_mode.
+  | svc : exec_mode.
 
 Record os : Set :=
   Os
     {
       curr_page : padd;
-      hcall : Hyperv_call
+      hcall : option Hyperv_call
     }.
 
 
