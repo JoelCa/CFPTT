@@ -43,11 +43,11 @@ Definition isRW (s:state) (ma:madd):Prop :=
 (* Como es la precedencia del exits? *)
 Definition Pre (s:state) (a:Action):Prop :=
   match a with
-  | Read v => Is_true (context.(ctxt_vadd_accessible) v)
+  | Read v => context.(ctxt_vadd_accessible) v = true
               /\ s.(aos_activity) = running
               /\ exists ma:madd, va_mapped_to_ma s v ma
                 /\ isRW s ma
-  | Write v _ =>  Is_true (context.(ctxt_vadd_accessible) v)
+  | Write v _ =>  context.(ctxt_vadd_accessible) v = true
                   /\ s.(aos_activity) = running
                   /\ exists ma:madd, va_mapped_to_ma s v ma
                     /\ isRW s ma
@@ -69,14 +69,14 @@ Definition Post (s:state) (a:Action) (s':state):Prop  :=
                                   /\ s'.(aos_activity) = s.(aos_activity)
                                   /\ s'.(oss) = s.(oss)
                                   /\ s'.(hypervisor)=s.(hypervisor)
-  | Chmod =>  (Is_true (context.(ctxt_oss) s.(active_os))
+  | Chmod =>  (context.(ctxt_oss) s.(active_os) = true
                 /\ s'.(aos_exec_mode) = svc
                 /\ s'.(aos_activity) = running
                 /\ s'.(memory) = s.(memory)
                 /\ s'.(active_os) = s.(active_os)
                 /\ s'.(oss) = s.(oss)
                 /\ s'.(hypervisor) = s.(hypervisor))
-              \/  (~Is_true (context.(ctxt_oss) s.(active_os))
+              \/  (context.(ctxt_oss) s.(active_os) = false
                 /\ s'.(aos_exec_mode) = usr
                 /\ s'.(aos_activity) = running
                 /\ s'.(memory) = s.(memory)
@@ -89,9 +89,8 @@ Definition Post (s:state) (a:Action) (s':state):Prop  :=
 (* Ejercicio 4 *)
 
 Definition prop3 (s:state):Prop :=
-  Is_true (context.(ctxt_oss) s.(active_os))
-  /\ ((s.(aos_activity)=running -> s.(aos_exec_mode) = svc)
-      \/ s.(aos_activity) = waiting).
+  (s.(aos_activity)=running -> context.(ctxt_oss) s.(active_os) = true -> s.(aos_exec_mode) = svc)
+  \/ s.(aos_activity) = waiting.
 
 Definition prop5 (s:state):Prop :=
   (forall (os:os_ident) (pa:padd),
@@ -113,8 +112,8 @@ Definition prop6 (s:state):Prop :=
             /\ forall va:vadd,
                 App pt [va] (fun ma':madd =>
                   App s.(memory) [ma'] (fun p':page =>
-                    (Is_true (context.(ctxt_vadd_accessible) va) -> p'.(page_owned_by) = OS osi)
-                    /\ (~Is_true (context.(ctxt_vadd_accessible) va) -> p'.(page_owned_by) = Hyp))))))).
+                    (context.(ctxt_vadd_accessible) va = true -> p'.(page_owned_by) = OS osi)
+                    /\ (context.(ctxt_vadd_accessible) va = false -> p'.(page_owned_by) = Hyp))))))).
 
 Definition valid_state (s:state):Prop :=
   prop3 s /\ prop5 s /\ prop6 s.
@@ -128,9 +127,32 @@ Inductive one_step_exec (s:state) (a:Action) (s':state) : Prop :=
 
 
 (* Ejercicio 6 *)
-Theorem ej6 : forall (s s':state) (a:Action), one_step_exec s a s' -> prop3 s.
+Theorem ej6 : forall (s s':state) (a:Action), one_step_exec s a s' -> prop3 s'.
 Proof.
+  intros.
+  induction H.
+  unfold valid_state in H.
+  elim H; intros; clear H.
+  clear H3.
+  induction a.
+    unfold Post in H1.
+    rewrite <- H1; assumption.
 
+    unfold Post in H1.
+    elim H1; intros; clear H1.
+    unfold prop3 in *.
+    elim H; intros.
+    elim H3; intros.
+    elim H5;intros.
+    elim H7;intros.
+    elim H9;intros.
+    rewrite H10, H6, H8.
+    assumption.
+
+    unfold Post in H1.
+    destruct (ctxt_oss context (active_os s)).
+      elim H1; intros.
+      unfold prop3 in *.
 Qed.
 
 
