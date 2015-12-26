@@ -115,7 +115,6 @@ Fixpoint map_valid_index_fix (mp:mapping) (idx:index) : bool :=
 Definition map_size (mp : mapping) : nat := length mp.
 *)
 
-
 (* LO NUEVO *)
 Section Mapping_Definition.
 

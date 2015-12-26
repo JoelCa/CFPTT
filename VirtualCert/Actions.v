@@ -20,63 +20,59 @@ Variable context : context.
 Notation "'App' c1 '[' c2 ']' c3" :=
       (app c1 c2 c3)(at level 200).
 
-Definition isPage (va:vadd) (ma:madd) (p:option page):Prop :=
-  option_elim p
-    (fun (p:page) => exists (pt:vadd->option madd), p.(page_content) = PT pt
-              /\ App pt [va] (fun (m:madd) => m=ma))
-    False.
-
 Definition va_mapped_to_ma (s:state) (va:vadd) (ma:madd):Prop :=
-   isPage va ma (option_app s.(memory)
-     (option_appD (s.(hypervisor) s.(active_os))
-       (option_map (fun (s:os) => s.(curr_page)) (s.(oss) s.(active_os))))).
+  App (oss s) [active_os s] (fun os_info:os =>
+    App (hypervisor s) [active_os s] (fun f:mapping padd madd =>
+      App f [curr_page os_info] (fun ma:madd =>
+        App (memory s) [ma] (fun p:page =>
+          exists (pt:mapping vadd madd), page_content p = PT pt
+            /\ App pt [va] (fun (m:madd) => m=ma))))).
 
 (* La dir. de máquina deberia tener un valor de escritura/lectura? *)
 Definition isRW (s:state) (ma:madd):Prop :=
-  App s.(memory) [ma] (fun (p:page) =>
-    exists ov:option value, p.(page_content) = RW ov
-                    /\ option_elim ov (fun (_:value)=> True) False).
+  App (memory s) [ma] (fun (p:page) =>
+    exists ov:value, (page_content p) = RW (Some ov)).
 
 (* Como es la precedencia del exits? *)
 Definition Pre (s:state) (a:Action):Prop :=
   match a with
-  | Read v => context.(ctxt_vadd_accessible) v = true
-              /\ s.(aos_activity) = running
+  | Read v => ctxt_vadd_accessible context v = true
+              /\ aos_activity s = running
               /\ exists ma:madd, va_mapped_to_ma s v ma
                 /\ isRW s ma
-  | Write v _ =>  context.(ctxt_vadd_accessible) v = true
-                  /\ s.(aos_activity) = running
+  | Write v _ =>  ctxt_vadd_accessible context v = true
+                  /\ aos_activity s = running
                   /\ exists ma:madd, va_mapped_to_ma s v ma
                     /\ isRW s ma
 
-  | Chmod =>  s.(aos_activity) = waiting
-              /\  App s.(oss) [s.(active_os)] (fun (s:os)=>s.(hcall)=None)
+  | Chmod =>  aos_activity s = waiting
+              /\  App (oss s) [active_os s] (fun (s:os)=> hcall s = None)
   end.
 
 Definition Post (s:state) (a:Action) (s':state):Prop  :=
   match a with
-  | Read x => s=s'
+  | Read x => s = s'
   | Write v x => exists ma:madd,  va_mapped_to_ma s v ma
-                                  /\ s'.(memory) = option_update s.(memory) madd_eq ma (Page (RW (Some x)) (OS s.(active_os)))
-                                  /\ s'.(active_os) = s.(active_os)
-                                  /\ s'.(aos_exec_mode) = s.(aos_exec_mode)
-                                  /\ s'.(aos_activity) = s.(aos_activity)
-                                  /\ s'.(oss) = s.(oss)
-                                  /\ s'.(hypervisor)=s.(hypervisor)
-  | Chmod =>  (context.(ctxt_oss) s.(active_os) = true
-                /\ s'.(aos_exec_mode) = svc
-                /\ s'.(aos_activity) = running
-                /\ s'.(memory) = s.(memory)
-                /\ s'.(active_os) = s.(active_os)
-                /\ s'.(oss) = s.(oss)
-                /\ s'.(hypervisor) = s.(hypervisor))
-              \/  (context.(ctxt_oss) s.(active_os) = false
-                /\ s'.(aos_exec_mode) = usr
-                /\ s'.(aos_activity) = running
-                /\ s'.(memory) = s.(memory)
-                /\ s'.(active_os) = s.(active_os)
-                /\ s'.(oss) = s.(oss)
-                /\ s'.(hypervisor) = s.(hypervisor))
+                                  /\ memory s' = option_update (memory s) madd_eq ma (Page (RW (Some x)) (OS s.(active_os)))
+                                  /\ active_os s' = active_os s
+                                  /\ aos_exec_mode s' = aos_exec_mode s
+                                  /\ aos_activity s' = aos_activity s
+                                  /\ oss s' = oss s
+                                  /\ hypervisor s'= hypervisor s
+  | Chmod =>  (ctxt_oss context (active_os s) = true
+                /\ aos_exec_mode s' = svc
+                /\ aos_activity s' = running
+                /\ memory s' = memory s
+                /\ active_os s' = active_os s
+                /\ oss s' = oss s
+                /\ hypervisor s' = hypervisor s)
+              \/  (ctxt_oss context (active_os s) = false
+                /\ aos_exec_mode s' = usr
+                /\ aos_activity s' = running
+                /\ memory s' = memory s
+                /\ active_os s' = active_os s
+                /\ oss s' = oss s
+                /\ hypervisor s' = hypervisor s)
   end. 
 
 
@@ -84,30 +80,30 @@ Definition Post (s:state) (a:Action) (s':state):Prop  :=
 
 (* Nose si está bien. *)
 Definition prop3 (s:state):Prop :=
-  (s.(aos_activity)=running -> context.(ctxt_oss) s.(active_os) = true -> s.(aos_exec_mode) = svc).
+  aos_activity s = running -> ctxt_oss context (active_os s) = true -> aos_exec_mode s = svc.
 
 Definition prop5 (s:state):Prop :=
   (forall (os:os_ident) (pa:padd),
-    App s.(hypervisor) [os] (fun f:padd->option madd =>
+    App (hypervisor s) [os] (fun f:padd->option madd =>
       App f [pa] (fun ma:madd =>
-        App s.(memory) [ma] (fun p:page => p.(page_owned_by) = OS os))))
+        App (memory s) [ma] (fun p:page => page_owned_by p = OS os))))
   /\ (forall (os:os_ident) (pa1 pa2:padd),
-        App s.(hypervisor) [os] (fun f:padd->option madd =>
+        App (hypervisor s) [os] (fun f:padd->option madd =>
           ~(f pa1 = None)
           /\ f pa1 = f pa2 -> pa1 = pa2)).
 
 Definition prop6 (s:state):Prop :=
   forall (osi:os_ident),
-    App s.(oss) [osi] (fun os_info:os=>
-      App s.(hypervisor) [osi] (fun f:padd->option madd =>
-        App f [os_info.(curr_page)] (fun ma:madd =>
-          App s.(memory) [ma] (fun p:page =>
-            exists pt:vadd->option madd, p.(page_content) = PT pt
+    App (oss s) [osi] (fun os_info:os=>
+      App (hypervisor s) [osi] (fun f:padd->option madd =>
+        App f [curr_page os_info] (fun ma:madd =>
+          App (memory s) [ma] (fun p:page =>
+            exists pt:vadd->option madd, page_content p = PT pt
             /\ forall va:vadd,
                 App pt [va] (fun ma':madd =>
-                  App s.(memory) [ma'] (fun p':page =>
-                    (context.(ctxt_vadd_accessible) va = true -> p'.(page_owned_by) = OS osi)
-                    /\ (context.(ctxt_vadd_accessible) va = false -> p'.(page_owned_by) = Hyp))))))).
+                  App (memory s) [ma'] (fun p':page =>
+                    (ctxt_vadd_accessible context va = true -> page_owned_by p' = OS osi)
+                    /\ (ctxt_vadd_accessible context va = false -> page_owned_by p' = Hyp))))))).
 
 Definition valid_state (s:state):Prop :=
   prop3 s /\ prop5 s /\ prop6 s.

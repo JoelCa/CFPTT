@@ -72,6 +72,8 @@ Inductive content : Set :=
   | PT : mapping vadd madd -> content
   | Other : content.
 
+Print content_rect.
+
 Inductive page_owner : Set :=
   | Hyp : page_owner
   | OS : os_ident -> page_owner
