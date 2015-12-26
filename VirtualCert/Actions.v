@@ -16,9 +16,6 @@ Inductive Action : Set :=
 (* Ejercicio 3 *)
 Variable context : context.
 
-Check context.(ctxt_vadd_accessible).
-Require Import Coq.Bool.Bool.
-
 (* NO lo puedo poner en Actions.v*)
 Notation "'App' c1 '[' c2 ']' c3" :=
       (app c1 c2 c3)(at level 200).
@@ -55,9 +52,6 @@ Definition Pre (s:state) (a:Action):Prop :=
   | Chmod =>  s.(aos_activity) = waiting
               /\  App s.(oss) [s.(active_os)] (fun (s:os)=>s.(hcall)=None)
   end.
-
-Check Is_true.
-
 
 Definition Post (s:state) (a:Action) (s':state):Prop  :=
   match a with
@@ -120,7 +114,6 @@ Definition valid_state (s:state):Prop :=
 
 
 (* Ejercicio 5 *)
-
 (* Es mejor usar Definition? *)
 Inductive one_step_exec (s:state) (a:Action) (s':state) : Prop :=
   | Exec : valid_state(s) -> Pre s a -> Post s a s' -> one_step_exec s a s'.
@@ -194,10 +187,10 @@ Proof.
       rewrite H6 in H0.
       unfold option_app in H0.
       unfold option_elim in H0.
-      case_eq (o0 (curr_page o)); intros.
+      case_eq (m (curr_page o)); intros.
       rewrite H7 in H0.
       unfold isPage in H0.
-      case_eq (memory s m); intros.
+      case_eq (memory s m0); intros.
       unfold option_elim in H0.
       rewrite H8 in H0.
       elim H0; intros.
@@ -234,7 +227,7 @@ Proof.
       clear H14.
       unfold app in H.
       rewrite H5, H6 in H.
-      unfold option_elim in H.
+      unfold option_rect in H.
       rewrite H7, H8 in H.
       elim H; intros; clear H.
       elim H12; intros; clear H12.
@@ -256,7 +249,7 @@ Proof.
       clear H14.
       rewrite H12 in H9.
       rewrite H9 in H15.
-      case_eq (memory s m0); intros.
+      case_eq (memory s m1); intros.
       rewrite H14 in H15.
       elim H15; intros.
       assert (page_owned_by p0 = OS (active_os s)).

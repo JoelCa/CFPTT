@@ -21,13 +21,13 @@ Parameter Hyperv_call: Set.
 Parameter vadd: Set.
 Parameter vadd_eq : forall va1 va2 : vadd, {va1 = va2} + {va1 <> va2}.
 
-(** Direcciones de M·quina. *)
+(** Direcciones de M√°quina. *)
 Parameter madd :  Set.
 Parameter madd_eq : forall ma1 ma2 : madd, {ma1 = ma2} + {ma1 <> ma2}.
 
-(** Direcciones FÌsicas : 
+(** Direcciones F√≠sicas : 
 Los sitemas operativos utilizan este tipo de direcciones para ver regiones de memoriea
-contigua. Estos no ven direcciones de m·quina. *)
+contigua. Estos no ven direcciones de m√°quina. *)
 Parameter padd: Set.
 Parameter padd_eq : forall pa1 pa2 : padd, {pa1 = pa2} + {pa1 <> pa2}.
 
@@ -39,7 +39,7 @@ Parameter value_eq:forall val1 val2 : value, {val1 = val2} + {val1 <> val2}.
 (* Environment *)
 Record context : Set :=
   Context
-    {(** una direcciÛn virtual es accesible, i.e. no est· reserveda 
+    {(** una direcci√≥n virtual es accesible, i.e. no est√° reserveda 
          por el Hypervisor *)
        ctxt_vadd_accessible: vadd -> bool;
      (** guest Oss (Confiable/No Confiable) **)
@@ -59,19 +59,17 @@ Record os : Set :=
     }.
 
 
-Definition oss_map := os_ident -> option os.
+Definition oss_map := mapping os_ident os.
 
 Inductive os_activity : Set :=
   | running : os_activity
   | waiting : os_activity.
 
-Definition hypervisor_map := os_ident -> option (padd -> option madd).
-
-Check (option value).
+Definition hypervisor_map := mapping os_ident (mapping padd madd).
 
 Inductive content : Set :=
   | RW : option value -> content
-  | PT : (vadd -> option madd) -> content
+  | PT : mapping vadd madd -> content
   | Other : content.
 
 Inductive page_owner : Set :=
@@ -86,7 +84,7 @@ Record page : Set :=
       page_owned_by : page_owner
     }.
 
-Definition system_memory := madd -> option page.
+Definition system_memory := mapping madd page.
 
 Record state : Set :=
   State

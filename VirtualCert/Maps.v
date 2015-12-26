@@ -127,18 +127,23 @@ Definition option_elim (A B:Type) (o:option A) (f:A->B) (b:B):B:=
   | None => b
   end.
 
-Definition option_app (A B:Type) (f:A->option B) (q:option A) :option B:=
+Print option.
+Print option_ind.
+
+Definition option_app (A B:Set) (f:mapping A B) (q:option A) :option B:=
   option_elim q f None.
 
-Definition option_appD (A B:Type) (o:option (A->option B)) (q:option A) :option B:=
+Definition option_appD (A B:Set) (o:option (mapping A B)) (q:option A) :option B:=
   option_app (fun (g:A->option B) => option_app g q) o.
 
-Definition option_update (A B:Type) (f:A->option B) (compare:forall x1 x2 : A, {x1 = x2} + {x1 <> x2}) (x:A) (y:B):A->option B:=
+Definition option_update (A B:Set) (f:mapping A B) (compare:forall x1 x2 : A, {x1 = x2} + {x1 <> x2}) (x:A) (y:B):A->option B:=
   fun (a:A) => if compare a x then Some y else f a.
 
 (*Utilizamos app se quiere evaluar el predicado g(f(x)), sabiendo
 * que f(x) está bien definido *)
-Definition app (A B:Type) (f:A->option B) (x:A) (g:B->Prop):Prop:=
-  option_elim (f x) g False.
+Check Set.
+
+Definition app (A B:Set) (f:A->option B) (x:A) (g:B->Prop):Prop:=
+  option_rect (fun _:option B => Prop) g False (f x).
 
 End Mapping_Definition.
