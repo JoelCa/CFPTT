@@ -23,8 +23,8 @@ Notation "'App' c1 '[' c2 ']' c3" :=
 Definition va_mapped_to_ma (s:state) (va:vadd) (ma:madd):Prop :=
   App (oss s) [active_os s] (fun os_info:os =>
     App (hypervisor s) [active_os s] (fun f:mapping padd madd =>
-      App f [curr_page os_info] (fun ma:madd =>
-        App (memory s) [ma] (fun p:page =>
+      App f [curr_page os_info] (fun ma':madd =>
+        App (memory s) [ma'] (fun p:page =>
           exists (pt:mapping vadd madd), page_content p = PT pt
             /\ App pt [va] (fun (m:madd) => m=ma))))).
 
@@ -160,118 +160,101 @@ Qed.
 (* Ejercicio 7 *)
 Theorem ej7 : forall (s s':state) (va:vadd), one_step_exec s (Read va) s' ->
   exists (ma:madd), va_mapped_to_ma s va ma
-  /\ App s.(memory) [ma] (fun p:page =>
-    p.(page_owned_by) = OS s.(active_os)).
+  /\ App (memory s) [ma] (fun p:page =>
+    page_owned_by p = OS (active_os s)).
 Proof.
   intros.
-  induction H.
+  destruct H.
   unfold Pre in H0.
   elim H0; intros.
   elim H3; intros.
   elim H5; intros.
-  clear H0; clear H3; clear H5.
-  elim H6; intros; clear H6.
+  elim H6; intros.
+  clear H0; clear H3; clear H5; clear H6.
   exists x; split.
     assumption.
 
-    unfold va_mapped_to_ma in H0.
-    unfold option_map in H0.
+    unfold va_mapped_to_ma in H7.
+    unfold app in H7.
     case_eq (oss s (active_os s)); intros.
-    rewrite H5 in H0.
-      unfold option_appD in H0.
+      rewrite H0 in H7; simpl in H7.
       case_eq (hypervisor s (active_os s)); intros.
-      rewrite H6 in H0.
-      unfold option_app in H0.
-      unfold option_elim in H0.
-      case_eq (m (curr_page o)); intros.
-      rewrite H7 in H0.
-      unfold isPage in H0.
-      case_eq (memory s m0); intros.
-      unfold option_elim in H0.
-      rewrite H8 in H0.
-      elim H0; intros.
-      elim H9; intros; clear H9.
-      case_eq (x0 va); intros.
-      unfold app, option_elim in H11.
-      rewrite H9 in H11.
-      clear H0.
-      unfold valid_state in H.
-      elim H; intros.
-      elim H12; intros.
-      clear H12; clear H.
-      unfold prop6 in H14.
-      assert (App oss s [active_os s]
-      (fun os_info : os =>
-       App hypervisor s [active_os s]
-       (fun f : padd -> option madd =>
-        App f [curr_page os_info]
-        (fun ma : madd =>
-         App memory s [ma]
-         (fun p : page =>
-          exists pt : vadd -> option madd,
-            page_content p = PT pt /\
-            (forall va : vadd,
-             App pt [va]
-             (fun ma' : madd =>
-              App memory s [ma']
-              (fun p' : page =>
-               (ctxt_vadd_accessible context va = true ->
+        rewrite H3 in H7; simpl in H7.
+        case_eq (m (curr_page o)); intros.
+          rewrite H5 in H7; simpl in H7.
+          case_eq (memory s m0); intros.
+            rewrite H6 in H7; simpl in H7.
+            elim H7; intros.
+            elim H9; intros.
+            clear H7; clear H9.
+            case_eq (x0 va); intros.
+              rewrite H7 in H11; simpl in H11.
+              unfold valid_state in H.
+              elim H; intros.
+              elim H12; intros.
+              clear H; clear H12.
+              unfold prop6 in H14.
+              assert (App oss s [active_os s]
+                (fun os_info : os =>
+                App hypervisor s [active_os s]
+                (fun f : padd -> option madd =>
+                App f [curr_page os_info]
+                (fun ma : madd =>
+                App memory s [ma]
+                (fun p : page =>
+                exists pt : vadd -> option madd,
+                page_content p = PT pt /\
+                (forall va : vadd,
+                App pt [va]
+                (fun ma' : madd =>
+                App memory s [ma']
+                (fun p' : page =>
+                (ctxt_vadd_accessible context va = true ->
                 page_owned_by p' = OS (active_os s)) /\
-               (ctxt_vadd_accessible context va = false ->
+                (ctxt_vadd_accessible context va = false ->
                 page_owned_by p' = Hyp))))))))).
-      apply (H14 (active_os s)).
-      clear H14.
-      unfold app in H.
-      rewrite H5, H6 in H.
-      unfold option_rect in H.
-      rewrite H7, H8 in H.
-      elim H; intros; clear H.
-      elim H12; intros; clear H12.
-      rewrite H10 in H.
-      injection H; intro.
-      assert (match x1 va with
-      | Some a =>
-          match memory s a with
-          | Some a0 =>
-              (ctxt_vadd_accessible context va = true ->
-               page_owned_by a0 = OS (active_os s)) /\
-              (ctxt_vadd_accessible context va = false ->
-               page_owned_by a0 = Hyp)
-          | None => False
-          end
-      | None => False
-      end).
-      apply (H14 va).
-      clear H14.
-      rewrite H12 in H9.
-      rewrite H9 in H15.
-      case_eq (memory s m1); intros.
-      rewrite H14 in H15.
-      elim H15; intros.
-      assert (page_owned_by p0 = OS (active_os s)).
-      exact (H16 H2).
-      clear H15; clear H16; clear H17.
-      unfold app.
-      rewrite <- H11, H14.
-      simpl; assumption.
+                exact (H14 (active_os s)).
+                
+                clear H14.
+                unfold app in H.
+                rewrite H0, H3 in H; simpl in H.
+                rewrite H5 in H; simpl in H.
+                rewrite H6 in H; simpl in H.
+                elim H; intros.
+                elim H12; intros.
+                clear H; clear H12.
+                rewrite H10 in H14.
+                injection H14; intro.
+                assert (option_rect (fun _ : option madd => Prop)
+                  (fun ma' : madd =>
+                  option_rect (fun _ : option page => Prop)
+                  (fun p' : page =>
+                  (ctxt_vadd_accessible context va = true ->
+                  page_owned_by p' = OS (active_os s)) /\
+                  (ctxt_vadd_accessible context va = false ->
+                  page_owned_by p' = Hyp)) False (memory s ma')) False (x1 va)).
+                  exact (H15 va).
 
-      rewrite H14 in H15.
-      elim H15.
+                  clear H15.
+                  rewrite H in H7.
+                  rewrite H7 in H12; simpl in H12.
+                  case_eq (memory s m1); intros.
+                    rewrite H15 in H12; simpl in H12.
+                    elim H12; intros; clear H12.
+                    unfold app.
+                    rewrite H11 in H15.
+                    rewrite H15; simpl.
+                    exact (H16 H2).
 
-      unfold app in H11.
-      rewrite H9 in H11; simpl in H11; elim H11.
+                    rewrite H15 in H12; simpl in H; elim H12.
 
-      rewrite H8 in H0.
-      simpl in H0; elim H0.
+              rewrite H7 in H11; simpl in H11; elim H11.
 
-      rewrite H7 in H0.
-      simpl in H0; elim H0.
+            rewrite H6 in H7; simpl in H7; elim H7.
 
-      rewrite H6 in H0.
-      unfold option_app, option_elim in H0.
-      simpl in H0; elim H0.
+          rewrite H5 in H7; simpl in H7; elim H7.
 
-      rewrite H5 in H0.
-      unfold option_appD, option_app, option_elim in H0.
-      destruct (hypervisor s (active_os s)); (simpl in H0; elim H0).
+        rewrite H3 in H7; simpl in H7; elim H7.
+
+      rewrite H0 in H7; simpl in H7; elim H7.
 Qed.
