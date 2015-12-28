@@ -16,7 +16,6 @@ Inductive Action : Set :=
 (* Ejercicio 3 *)
 Variable context : context.
 
-(* NO lo puedo poner en Actions.v*)
 Notation "'App' c1 '[' c2 ']' c3" :=
       (mapping_app c1 c2 c3)(at level 200).
 
@@ -28,12 +27,10 @@ Definition va_mapped_to_ma (s:state) (va:vadd) (ma:madd):Prop :=
           exists (pt:mapping vadd madd), page_content p = PT pt
             /\ App pt [va] (fun (m:madd) => m=ma))))).
 
-(* La dir. de máquina deberia tener un valor de escritura/lectura? *)
 Definition isRW (s:state) (ma:madd):Prop :=
   App (memory s) [ma] (fun (p:page) =>
-    exists ov:value, (page_content p) = RW (Some ov)).
+    exists ov:option value, (page_content p) = RW ov).
 
-(* Como es la precedencia del exits? *)
 Definition Pre (s:state) (a:Action):Prop :=
   match a with
   | Read v => ctxt_vadd_accessible context v = true
@@ -53,7 +50,7 @@ Definition Post (s:state) (a:Action) (s':state):Prop  :=
   match a with
   | Read x => s = s'
   | Write v x => exists ma:madd,  va_mapped_to_ma s v ma
-                                  /\ memory s' = mapping_update (memory s) madd_eq ma (Page (RW (Some x)) (OS  (active_os s)))
+                                  /\ memory s' = mapping_update (memory s) madd_eq ma (Page (RW (Some x)) (OS (active_os s)))
                                   /\ active_os s' = active_os s
                                   /\ aos_exec_mode s' = aos_exec_mode s
                                   /\ aos_activity s' = aos_activity s
@@ -77,8 +74,6 @@ Definition Post (s:state) (a:Action) (s':state):Prop  :=
 
 
 (* Ejercicio 4 *)
-
-(* Nose si está bien. *)
 Definition prop3 (s:state):Prop :=
   aos_activity s = running -> ctxt_oss context (active_os s) = true -> aos_exec_mode s = svc.
 
@@ -110,7 +105,6 @@ Definition valid_state (s:state):Prop :=
 
 
 (* Ejercicio 5 *)
-(* Es mejor usar Definition? *)
 Inductive one_step_exec (s:state) (a:Action) (s':state) : Prop :=
   | Exec : valid_state(s) -> Pre s a -> Post s a s' -> one_step_exec s a s'.
 

@@ -58,7 +58,6 @@ Record os : Set :=
       hcall : option Hyperv_call
     }.
 
-
 Definition oss_map := mapping os_ident os.
 
 Inductive os_activity : Set :=
@@ -71,8 +70,6 @@ Inductive content : Set :=
   | RW : option value -> content
   | PT : mapping vadd madd -> content
   | Other : content.
-
-Print content_rect.
 
 Inductive page_owner : Set :=
   | Hyp : page_owner
